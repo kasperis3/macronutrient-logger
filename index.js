@@ -42,20 +42,28 @@ app.use((req, res, next) => {
 });
 
 app.get("/", (req, res, next) => {
+  res.redirect("/users/signin");
+});
+
+app.get("/users/signin", (req, res, next) => {
   res.render("welcome");
 });
 
+app.get("/dashboard", 
+  catchError(async (req, res, next) => {
+  	res.render("dashboard");
+  })
+);
+
 app.post("/users/signin", 
   catchError(async (req, res, next) => {
-  	console.log("a)'");
   	let store = res.locals.store;
+  	console.log(store);
   	let username = req.body.username;
   	let password = req.body.password;
-  	console.log("do I reach here");
   	if ((username === "dev") && (!!password)) {
-      console.log("inseide");
       console.log(username);
-  	  res.render("dashboard");
+  	  res.redirect("/dashboard");
   	}
   	next();
   })
