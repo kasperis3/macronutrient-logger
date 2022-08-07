@@ -6,6 +6,7 @@ const store = require('connect-loki');
 const { body, validationResult } = require('express-validator');
 const PgPersistence = require('./lib/pg-persistence');
 const config = require('./lib/config');
+const catchError = require('./lib/catch-error');
 
 const app = express();
 const LokiStore = store(session);
@@ -43,6 +44,22 @@ app.use((req, res, next) => {
 app.get("/", (req, res, next) => {
   res.render("welcome");
 });
+
+app.post("/users/signin", 
+  catchError(async (req, res, next) => {
+  	console.log("a)'");
+  	let store = res.locals.store;
+  	let username = req.body.username;
+  	let password = req.body.password;
+  	console.log("do I reach here");
+  	if ((username === "dev") && (!!password)) {
+      console.log("inseide");
+      console.log(username);
+  	  res.render("dashboard");
+  	}
+  	next();
+  })
+);
 
 
 app.use((err, req, res, _next) => {

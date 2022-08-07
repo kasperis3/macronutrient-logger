@@ -1,2 +1,23 @@
 extends layout
 
+block main
+  form(action='/users/signin' method='post')
+    dl
+      dt
+        label(for="username") Enter username 
+      dd 
+        input(type="text" 
+        	  value=username
+        	  name="username"
+        	  placeholder="capricious")
+
+      dt
+        label(for="password") Enter password
+      dd
+        input(type="text"
+        	  value=password
+        	  name="password"
+        	  placeholder="losslessness")
+
+    fieldset
+      input(type="submit" value="Sign in")
