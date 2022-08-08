@@ -1,22 +1,28 @@
+const config = require('./lib/config');
 const express = require('express');
 const morgan = require('morgan');
 const flash = require('express-flash');
 const session = require('express-session');
-const store = require('connect-loki');
 const { body, validationResult } = require('express-validator');
-const PgPersistence = require('./lib/pg-persistence');
-const config = require('./lib/config');
 const catchError = require('./lib/catch-error');
+const PgPersistence = require('./lib/pg-persistence');
+const store = require('connect-loki');
+
 
 const app = express();
-const LokiStore = store(session);
 const PORT = config.PORT;
 const HOST = config.HOST;
+const LokiStore = store(session);
+
 
 app.set("views", "./views");
 app.set("view engine", "pug");
 
 app.use(morgan("common"));
+
+app.use(express.static("public"));
+app.use(express.urlencoded({ extended: false }));
+
 app.use(session({
   cookie: {
   	httpOnly: true,
@@ -30,9 +36,6 @@ app.use(session({
   secret: config.SECRET,
   store: new LokiStore({}),
 }));
-
-app.use(express.static("public"));
-app.use(express.urlencoded({ extended: false }));
 
 app.use(flash());
 
@@ -52,6 +55,27 @@ app.get("/users/signin", (req, res, next) => {
 app.get("/dashboard", 
   catchError(async (req, res, next) => {
   	res.render("dashboard");
+  })
+);
+
+app.get("/history", 
+  catchError(async (req, res, next) => {
+  	res.render("history");
+  })
+);
+
+app.post("/process-request", 
+  catchError(async (req, res, next) => {
+  	let store = res.locals.store;
+  	let list = req.body.list.split(","); // req.body.list of food items eaten today
+ 	let fat = req.body.fat;
+ 	let netCarb = req.body.carb;
+ 	let prot = req.body.prot;
+ 	console.log(list.join(" oAR "));
+ 	console.log([fat, netCarb, prot].join(" yEs "));
+ 	let result = await store.searchAndDestroy(list[0]);
+ 	res.redirect("/dashboard");
+ 	next();
   })
 );
 

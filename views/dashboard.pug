@@ -1,25 +1,31 @@
 extends layout
 
 block main
-  ol
-    li Enter todays food consumption
-    input(type="text"
-          value=fat
-          placeholder="enter a list of whole foods eaten today."
-          name="list")
-    li Enter todays macros
-    input(type="text"
-          value=fat
-          placeholder="fat"
-          name="fat")
-    input(type="text"
-          value=carb
-          placeholder="carb"
-          name="carb")
-    input(type="text"
-          value=prot
-          placeholder="prot"
-          name="prot")
-    li
-      a(href="/history") See 7 day log
-    
+  form(action='/process-request' method='post')
+    ol
+      li Enter todays food consumption
+      input(type="text"
+            value=fat
+            placeholder="enter a list of whole foods eaten today."
+            name="list")
+      li Enter todays macros
+      input(type="text"
+            value=fat
+            placeholder="fat"
+            name="fat")
+      input(type="text"
+            value=carb
+            placeholder="carb"
+            name="carb")
+      input(type="text"
+            value=prot
+            placeholder="prot"
+            name="prot")
+      li
+        a(href="/history") See 7 day log
+
+    fieldset
+      input(type="submit" value="Submit request(s)")
+
+
+      
