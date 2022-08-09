@@ -7,7 +7,13 @@ const { body, validationResult } = require('express-validator');
 const catchError = require('./lib/catch-error');
 const PgPersistence = require('./lib/pg-persistence');
 const store = require('connect-loki');
-
+const nutrientNumberMap = {
+  '203': 'Protein',
+  '204': 'Fat',
+  '205': 'Carbohydrate',
+  '208': 'Energy',
+  '291': 'Fiber'
+}
 
 const app = express();
 const PORT = config.PORT;
@@ -41,6 +47,7 @@ app.use(flash());
 
 app.use((req, res, next) => {
   res.locals.store = new PgPersistence(req.session);
+  res.locals.store.testQuery1();
   next();
 });
 
@@ -74,6 +81,21 @@ app.post("/process-request",
  	console.log(list.join(" oAR "));
  	console.log([fat, netCarb, prot].join(" yEs "));
  	let result = await store.searchAndDestroy(list[0]);
+ 	if (!!result) {
+ 	  // console.log(result);
+ 	  let fdcId = result.fdcId;
+ 	  let name = result.description;
+ 	  let nutrients = result.foodNutrients;
+ 	  const macroValues = {};
+ 	  nutrients.forEach(foodNutrient => {
+ 	  	let macro = nutrientNumberMap[foodNutrient.nutrient.number];
+ 	  	macroValues[macro] = foodNutrient.amount;
+ 	  });
+ 	  macroValues['net_carb'] = ((+macroValues['Carbohydrate']) - (+macroValues['Fiber'])).toFixed(2);
+ 	  console.log(nutrients);
+ 	  console.log(macroValues);
+ 	  let added = await store.addFood(fdcId, name, macroValues['Protein'], macroValues['net_carb'], macroValues['Fat']);
+ 	}
  	res.redirect("/dashboard");
  	next();
   })

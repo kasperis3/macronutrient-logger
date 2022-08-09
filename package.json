@@ -22,6 +22,7 @@
     "express-validator": "^6.14.2",
     "morgan": "^1.10.0",
     "node-fetch": "^2.6.7",
+    "pg": "^8.7.3",
     "pug": "^3.0.2"
   }
 }
