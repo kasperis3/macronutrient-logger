@@ -25,6 +25,8 @@ html(lang="en-US")
       block main
 
     footer
-    
-  
- 
+      block signIn
+        form(action="/users/signout" method="post")
+          fieldset
+            p Signed in as #{username}
+            button Sign Out

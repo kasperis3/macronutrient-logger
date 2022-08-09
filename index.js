@@ -49,36 +49,52 @@ app.use((req, res, next) => {
   res.locals.store = new PgPersistence(req.session);
   res.locals.store.testQuery1();
   res.locals.store.testQuery2();
+  res.locals.store.testQuery3();
   next();
 });
 
 app.use((req, res, next) => {
+  res.locals.username = req.session.username;
+  res.locals.signedIn = req.session.signedIn;
   res.locals.flash = req.session.flash;
   delete req.session.flash;
   next();
 });
+
+const requiresAuthorization = (req, res, next) => {
+  if (!res.locals.signedIn) {
+  	res.redirect(302, "/users/signin");
+  } else {
+  	next();
+  }
+}
 
 app.get("/", (req, res, next) => {
   res.redirect("/users/signin");
 });
 
 app.get("/users/signin", (req, res, next) => {
-  res.render("welcome");
+  res.render("welcome", {
+  	flash: Object.assign(req.flash(), res.locals.flash),		
+  });
 });
 
 app.get("/dashboard", 
+  requiresAuthorization,
   catchError(async (req, res, next) => {
   	res.render("dashboard");
   })
 );
 
-app.get("/history", 
+app.get("/history",
+  requiresAuthorization, 
   catchError(async (req, res, next) => {
   	res.render("history");
   })
 );
 
 app.post("/process-request", 
+  requiresAuthorization,
   catchError(async (req, res, next) => {
   	let store = res.locals.store;
   	let list = req.body.list.split(","); // req.body.list of food items eaten today
@@ -112,7 +128,8 @@ app.post("/process-request",
   })
 );
 
-app.post("/process-select-foods", 
+app.post("/process-select-foods",
+  requiresAuthorization,
   catchError(async (req, res, next) => {
   	let store = res.locals.store;
   	let fdcIds = Object.values(req.body);
@@ -142,7 +159,7 @@ app.post("/process-select-foods",
  	  }
 	  console.log("add new entry to user_eats");
 	  let foodId = await store.getFoodId(fdcId);
-	  let addedToUserEats = await store.addFoodToUserEats(foodId, 'dev'); 
+	  let addedToUserEats = await store.addFoodToUserEats(foodId, res.locals.username); 
  	}
 
  	res.redirect("/dashboard");
@@ -151,19 +168,55 @@ app.post("/process-select-foods",
   })
 );
 
-app.post("/users/signin", 
-  catchError(async (req, res, next) => {
+app.post("/users/signin",
+  catchError(async (req, res) => {
   	let store = res.locals.store;
-  	console.log(store);
-  	let username = req.body.username;
+  	let username = req.body.username.trim();
   	let password = req.body.password;
-  	if ((username === "dev") && (!!password)) {
-      console.log(username);
+
+  	if (await store.acceptsLoginCredentials(username, password)) {
+  	  req.flash("info", "Welcome");
+      req.session.signedIn = true;
+      req.session.username = username;
   	  res.redirect("/dashboard");
+  	} else {
+  	  req.flash("error", "invalid log in credentials");
+  	  res.render("welcome", {
+  	  	flash: req.flash(),
+  	  	username, 
+  	  })
   	}
-  	next();
   })
 );
+
+app.post("/users/create",
+  catchError(async (req, res, next) => {
+  	let store = res.locals.store;
+  	let username = req.body.username.trim();
+  	let password = req.body.password;
+
+  	if (await store.addNewUser(username, password)) {
+  	  req.flash("success", "New user added");
+  	  res.redirect("/users/signin");
+  	} else {
+  	  req.flash("error", "username already exists");
+  	  res.render("create", {
+  	  	flash: req.flash(),
+  	  })
+  	}
+
+  })
+);
+
+app.post("/users/signout", (req, res, next) => {
+  delete req.session.username;
+  delete req.session.signedIn;
+  res.redirect("/users/signin");
+})
+
+app.get("/users/create", (req, res, next) => {
+  res.render("create");
+});
 
 
 app.use((err, req, res, _next) => {
