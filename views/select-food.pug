@@ -1,0 +1,19 @@
+extends layout
+
+block main
+  form(action='/process-select-foods' method="post")
+    hr
+    each foodList in foodListOptions
+      div
+        each foodChoice in foodList
+          div
+            input(type="checkbox"
+                  name=`${foodChoice.fdcId}`
+                  value=`${foodChoice.fdcId}`) 
+            label(for=`${foodChoice.fdcId}`) #{foodChoice.description}
+      hr
+
+    fieldset
+      input(type="submit" value="Submit choices")
+
+
