@@ -48,6 +48,13 @@ app.use(flash());
 app.use((req, res, next) => {
   res.locals.store = new PgPersistence(req.session);
   res.locals.store.testQuery1();
+  res.locals.store.testQuery2();
+  next();
+});
+
+app.use((req, res, next) => {
+  res.locals.flash = req.session.flash;
+  delete req.session.flash;
   next();
 });
 
@@ -80,22 +87,48 @@ app.post("/process-request",
  	let prot = req.body.prot;
  	console.log(list.join(" oAR "));
  	console.log([fat, netCarb, prot].join(" yEs "));
- 	let result = await store.searchAndDestroy(list[0]);
- 	if (!!result) {
- 	  // console.log(result);
- 	  let fdcId = result.fdcId;
- 	  let name = result.description;
- 	  let nutrients = result.foodNutrients;
- 	  const macroValues = {};
- 	  nutrients.forEach(foodNutrient => {
- 	  	let macro = nutrientNumberMap[foodNutrient.nutrient.number];
- 	  	macroValues[macro] = foodNutrient.amount;
+
+ 	// 1 first check if food list items are in app database
+ 	// 2 for whichever are, add to user_eats
+ 	// 3 for whichever are not, query api and add to app database and add to user_eats
+
+ 	for (let food of list) {
+ 	  let foodListQuery = await store.getFdcId(food);
+ 	  res.render("select-food", {
+ 	  	foodListQuery,
  	  });
- 	  macroValues['net_carb'] = ((+macroValues['Carbohydrate']) - (+macroValues['Fiber'])).toFixed(2);
- 	  console.log(nutrients);
- 	  console.log(macroValues);
- 	  let added = await store.addFood(fdcId, name, macroValues['Protein'], macroValues['net_carb'], macroValues['Fat']);
+ 	  let foodFound = await store.findFood(foodFdcId);
+ 	  console.log("before main logic in for loop");
+ 	  if (foodFound) {
+ 	  	// add food to user_eats table
+ 	  	let foodId = await store.getFoodId(foodFdcId);
+ 	  	let addedToUserEats = await store.addFoodToUserEats(foodId, 'dev'); // TODO
+ 	  } else {
+ 	  	// query api for food data 
+ 	  	console.log("not in app, query api")
+ 	  	let result = await store.getFoodNutrients(food);
+ 	  	// add food data to app database
+ 	  	if (!!result) {
+ 	  	  let fdcId = result.fdcId;
+ 	  	  let name = result.description;
+ 	  	  let nutrients = result.foodNutrients;
+ 	  	  const macroValues = {};
+ 	  	  nutrients.forEach(foodNutrient => {
+ 	  	  	let macro = nutrientNumberMap[foodNutrient.nutrient.number];
+ 	  	  	macroValues[macro] = Number(foodNutrient.amount);
+ 	  	  });
+ 	  	  console.log(macroValues);
+ 	  	  let added = await store.addFood(fdcId, name, macroValues['Protein'], macroValues['Carbohydrate'], macroValues['Fiber'], macroValues['Fat']);
+ 	  	}
+ 	  	// add entry to user_eats
+ 	  	console.log("add new entry to user_eats");
+ 	  	let foodId = await store.getFoodId(foodFdcId);
+ 	  	let addedToUserEats = await store.addFoodToUserEats(foodId, 'dev'); 
+ 	  }
  	}
+
+ 	console.log("end of work");
+
  	res.redirect("/dashboard");
  	next();
   })
