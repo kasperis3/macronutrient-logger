@@ -1,0 +1,8 @@
+extends layout
+
+block main
+  - let entries = Object.entries(userMacros)
+  each entry in entries
+    hr
+    p #{entry[0]} #{entry[1].toFixed(2)}
+

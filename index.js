@@ -13,7 +13,7 @@ const nutrientNumberMap = {
   '205': 'Carbohydrate',
   '208': 'Energy',
   '291': 'Fiber'
-}
+};
 
 const app = express();
 const PORT = config.PORT;
@@ -89,9 +89,46 @@ app.get("/dashboard",
 app.get("/history",
   requiresAuthorization, 
   catchError(async (req, res, next) => {
-  	res.render("history");
+  	let store = res.locals.store;
+  	let userMacros = await store.getUserMacros(res.locals.username);
+  	console.log(Object.entries(userMacros));
+  	res.render("history", {
+  	  userMacros,
+  	});
   })
 );
+
+// app.get("/favorite-elements", 
+//   requiresAuthorization,
+//   catchError(async (req, res) => {
+
+//   	let stages = req.params.stages;
+
+//   	if (stages === 0) {
+//   	  let nuts = ['Almonds', 'Hazelnuts', 'Walnuts', 'Pecans', 'Macadamia', 'Cashew', ];
+//   	  let seeds = ['Pumpkin Seeds', 'Sesame Seeds', 'Hemp Seeds', 'Chia Seeds'];
+//   	  let awesomeFoods = [...nuts, ...seeds];
+
+//   	  let foodListOptions = [];
+	 	
+// 	  for (let food of awesomeFoods) {
+// 	 	let foodListQuery = await store.getFdcId(food);
+// 	 	foodListOptions.push(foodListQuery);
+// 	  }
+
+// 	   res.render("select-food", {
+// 	 	  foodListOptions,
+// 	 	  stages: 1,
+// 	   });
+//   	} else if (stages === 1) {
+
+//   	} else {
+//   	  res.render("favorite-elements", {
+//   	    awesomeFoods,
+//   	  });
+//   	}
+//   })
+// );
 
 app.post("/process-request", 
   requiresAuthorization,
@@ -133,18 +170,17 @@ app.post("/process-select-foods",
   catchError(async (req, res, next) => {
   	let store = res.locals.store;
   	let fdcIds = Object.values(req.body);
-  	console.log("enter process-select-foods");
 
  	for (let fdcId of fdcIds) {
  	  let foodFound = await store.findFood(fdcId);
- 	  console.log("before main logic in for loop");
  	  if (!foodFound) {
  	  	// query api for food data 
- 	  	console.log("not in app, query api")
  	  	let result = await store.getFoodNutrients(fdcId);
  	  	// add food data to app database
  	  	if (!!result) {
  	  	  // let fdcId = result.fdcId;
+ 	  	  console.log(Object.keys(result));
+ 	  	  console.log(result.foodPortions);
  	  	  let name = result.description;
  	  	  let nutrients = result.foodNutrients;
  	  	  const macroValues = {};
@@ -157,11 +193,11 @@ app.post("/process-select-foods",
  	  	}
  	  	// add entry to user_eats
  	  }
-	  console.log("add new entry to user_eats");
 	  let foodId = await store.getFoodId(fdcId);
 	  let addedToUserEats = await store.addFoodToUserEats(foodId, res.locals.username); 
  	}
 
+ 	req.flash("succes", "new foods added to your history");
  	res.redirect("/dashboard");
 
   	next();
