@@ -177,7 +177,7 @@ const processFoods = async (store, fdcIds) => {
  	  	console.log(result.foodPortions);
  	  	let name = result.description;
  	  	let nutrients = result.foodNutrients;
- 	  	// const macroValues = {};
+ 	  	const macroValues = {};
  	  	nutrients.forEach(foodNutrient => {
  	  	  let macro = nutrientNumberMap[foodNutrient.nutrient.number];
  	  	  macroValues[macro] = Number(foodNutrient.amount);
@@ -201,27 +201,6 @@ app.post("/process-select-foods",
   	await processFoods(store, fdcIds);
 
  	for (let fdcId of fdcIds) {
- 	//   let foodFound = await store.findFood(fdcId);
- 	//   if (!foodFound) {
- 	//   	// query api for food data 
- 	//   	let result = await store.getFoodNutrients(fdcId);
- 	//   	// add food data to app database
- 	//   	if (!!result) {
- 	//   	  // let fdcId = result.fdcId;
- 	//   	  console.log(Object.keys(result));
- 	//   	  console.log(result.foodPortions);
- 	//   	  let name = result.description;
- 	//   	  let nutrients = result.foodNutrients;
- 	//   	  const macroValues = {};
- 	//   	  nutrients.forEach(foodNutrient => {
- 	//   	  	let macro = nutrientNumberMap[foodNutrient.nutrient.number];
- 	//   	  	macroValues[macro] = Number(foodNutrient.amount);
- 	//   	  });
- 	//   	  console.log(macroValues);
- 	//   	  let added = await store.addFood(fdcId, name, macroValues['Protein'], macroValues['Carbohydrate'], macroValues['Fiber'], macroValues['Fat']);
- 	//   	}
- 	//   	// add entry to user_eats
- 	//   }
 	  let foodId = await store.getFoodId(fdcId);
 	  let addedToUserEats = await store.addFoodToUserEats(foodId, res.locals.username); 
  	}
@@ -230,6 +209,12 @@ app.post("/process-select-foods",
  	res.redirect("/dashboard");
 
   	next();
+  })
+);
+
+app.get("/food-stuffs", 
+  catchError(async (req, res, next) => {
+  	next(); // display what users have entered into the database so far
   })
 );
 

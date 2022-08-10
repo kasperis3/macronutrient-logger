@@ -2,7 +2,9 @@ extends layout
 
 block main
   h1 A list of my favorite nutrient dense foods
-
+  button(type="submit") Sort by fat
+  button(type="submit") Sort by protein
+  button(type="submit") Sort by net carbohydrate
   - let keys = Object.keys(awesomeFoods)
   section
     each key in keys
