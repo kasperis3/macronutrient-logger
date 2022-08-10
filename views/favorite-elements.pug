@@ -3,7 +3,14 @@ extends layout
 block main
   h1 A list of my favorite nutrient dense foods
 
+  - let keys = Object.keys(awesomeFoods)
   section
-    each food in awesomeFoods
+    each key in keys
       hr 
-      #{food}
+      p #{key} 
+      - let nutrients = Object.keys(awesomeFoods[key])
+      each nute in nutrients
+        li #{nute} #{awesomeFoods[key][nute]}
+
+  block footer
+    a(href="/dashboard") Back to dashboard

@@ -98,37 +98,36 @@ app.get("/history",
   })
 );
 
-// app.get("/favorite-elements", 
-//   requiresAuthorization,
-//   catchError(async (req, res) => {
+app.get("/favorite-elements", 
+  catchError(async (req, res, next) => {
+  	const NUTS = ['Almonds', 'Hazelnuts', 'Walnuts', 'Pecans', 'Macadamia', 'Cashew'];
+	const SEEDS = ['Pumpkin Seeds', 'Sesame Seeds', 'Hemp Seeds', 'Chia Seeds', 'Sunflower Seeds'];
+	const FDC_IDS_NUTS = [1100508, 170182, 170178, 170162, 1100524, 170187];
+	const FDC_IDS_SEEDS = [170554, 170556, 1100608, 170562, 170148];
 
-//   	let stages = req.params.stages;
+	let store = res.locals.store;
+	let fdcIds = [...FDC_IDS_SEEDS, ...FDC_IDS_NUTS];
 
-//   	if (stages === 0) {
-//   	  let nuts = ['Almonds', 'Hazelnuts', 'Walnuts', 'Pecans', 'Macadamia', 'Cashew', ];
-//   	  let seeds = ['Pumpkin Seeds', 'Sesame Seeds', 'Hemp Seeds', 'Chia Seeds'];
-//   	  let awesomeFoods = [...nuts, ...seeds];
+	await processFoods(store, fdcIds); // adds to app database
 
-//   	  let foodListOptions = [];
-	 	
-// 	  for (let food of awesomeFoods) {
-// 	 	let foodListQuery = await store.getFdcId(food);
-// 	 	foodListOptions.push(foodListQuery);
-// 	  }
+	let awesomeFoods = {}; // dict of food.description + macro nutrients
 
-// 	   res.render("select-food", {
-// 	 	  foodListOptions,
-// 	 	  stages: 1,
-// 	   });
-//   	} else if (stages === 1) {
+	for (let fdcId of fdcIds) {
+	  let foodData = await store.getFood(fdcId);
+	  awesomeFoods[foodData.name] = {
+	  	'Protein': foodData.protein,
+	  	'Carbohydrate': foodData.carbohydrate,
+	  	'Fat': foodData.fat,
+	  	'Fiber': foodData.fiber,
+	  	'Net Carb': foodData['net carb'],
+	  };
+	}
 
-//   	} else {
-//   	  res.render("favorite-elements", {
-//   	    awesomeFoods,
-//   	  });
-//   	}
-//   })
-// );
+	res.render("favorite-elements", {
+	  awesomeFoods,
+	});
+  })
+);
 
 app.post("/process-request", 
   requiresAuthorization,
@@ -165,34 +164,64 @@ app.post("/process-request",
   })
 );
 
+const processFoods = async (store, fdcIds) => {
+  for (let fdcId of fdcIds) {
+ 	let foodFound = await store.findFood(fdcId);
+ 	if (!foodFound) {
+ 	  // query api for food data 
+ 	  let result = await store.getFoodNutrients(fdcId);
+ 	  // add food data to app database
+ 	  if (!!result) {
+ 	  	// let fdcId = result.fdcId;
+ 	  	console.log(Object.keys(result));
+ 	  	console.log(result.foodPortions);
+ 	  	let name = result.description;
+ 	  	let nutrients = result.foodNutrients;
+ 	  	// const macroValues = {};
+ 	  	nutrients.forEach(foodNutrient => {
+ 	  	  let macro = nutrientNumberMap[foodNutrient.nutrient.number];
+ 	  	  macroValues[macro] = Number(foodNutrient.amount);
+ 	  	});
+ 	  	console.log(macroValues);
+ 	  	let added = await store.addFood(fdcId, name, macroValues['Protein'], macroValues['Carbohydrate'], macroValues['Fiber'], macroValues['Fat']);
+ 	   }
+ 	  	// add entry to user_eats
+ 	}
+	// let foodId = await store.getFoodId(fdcId);
+	// let addedToUserEats = await store.addFoodToUserEats(foodId, res.locals.username); 
+  }
+}
+
 app.post("/process-select-foods",
   requiresAuthorization,
   catchError(async (req, res, next) => {
   	let store = res.locals.store;
   	let fdcIds = Object.values(req.body);
 
+  	await processFoods(store, fdcIds);
+
  	for (let fdcId of fdcIds) {
- 	  let foodFound = await store.findFood(fdcId);
- 	  if (!foodFound) {
- 	  	// query api for food data 
- 	  	let result = await store.getFoodNutrients(fdcId);
- 	  	// add food data to app database
- 	  	if (!!result) {
- 	  	  // let fdcId = result.fdcId;
- 	  	  console.log(Object.keys(result));
- 	  	  console.log(result.foodPortions);
- 	  	  let name = result.description;
- 	  	  let nutrients = result.foodNutrients;
- 	  	  const macroValues = {};
- 	  	  nutrients.forEach(foodNutrient => {
- 	  	  	let macro = nutrientNumberMap[foodNutrient.nutrient.number];
- 	  	  	macroValues[macro] = Number(foodNutrient.amount);
- 	  	  });
- 	  	  console.log(macroValues);
- 	  	  let added = await store.addFood(fdcId, name, macroValues['Protein'], macroValues['Carbohydrate'], macroValues['Fiber'], macroValues['Fat']);
- 	  	}
- 	  	// add entry to user_eats
- 	  }
+ 	//   let foodFound = await store.findFood(fdcId);
+ 	//   if (!foodFound) {
+ 	//   	// query api for food data 
+ 	//   	let result = await store.getFoodNutrients(fdcId);
+ 	//   	// add food data to app database
+ 	//   	if (!!result) {
+ 	//   	  // let fdcId = result.fdcId;
+ 	//   	  console.log(Object.keys(result));
+ 	//   	  console.log(result.foodPortions);
+ 	//   	  let name = result.description;
+ 	//   	  let nutrients = result.foodNutrients;
+ 	//   	  const macroValues = {};
+ 	//   	  nutrients.forEach(foodNutrient => {
+ 	//   	  	let macro = nutrientNumberMap[foodNutrient.nutrient.number];
+ 	//   	  	macroValues[macro] = Number(foodNutrient.amount);
+ 	//   	  });
+ 	//   	  console.log(macroValues);
+ 	//   	  let added = await store.addFood(fdcId, name, macroValues['Protein'], macroValues['Carbohydrate'], macroValues['Fiber'], macroValues['Fat']);
+ 	//   	}
+ 	//   	// add entry to user_eats
+ 	//   }
 	  let foodId = await store.getFoodId(fdcId);
 	  let addedToUserEats = await store.addFoodToUserEats(foodId, res.locals.username); 
  	}
@@ -249,6 +278,10 @@ app.post("/users/signout", (req, res, next) => {
   delete req.session.signedIn;
   res.redirect("/users/signin");
 })
+
+app.get("/users/signout", (req, res, next) => {
+  res.redirect("/users/signin");
+});
 
 app.get("/users/create", (req, res, next) => {
   res.render("create");
