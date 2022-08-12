@@ -47,9 +47,9 @@ app.use(flash());
 
 app.use((req, res, next) => {
   res.locals.store = new PgPersistence(req.session);
-  res.locals.store.testQuery1();
-  res.locals.store.testQuery2();
-  res.locals.store.testQuery3();
+  // res.locals.store.testQuery1();
+  // res.locals.store.testQuery2();
+  // res.locals.store.testQuery3();
   next();
 });
 
@@ -135,60 +135,57 @@ app.post("/process-request",
   	let store = res.locals.store;
   	let list = req.body.list.split(","); // req.body.list of food items eaten today
 
- 	let fat = req.body.fat;
- 	let netCarb = req.body.carb;
- 	let prot = req.body.prot;
- 	
- 	console.log(list.join(" oAR "));
- 	console.log([fat, netCarb, prot].join(" yEs "));
+   	let fat = req.body.fat;
+   	let netCarb = req.body.carb;
+   	let prot = req.body.prot;
+   	
+   	console.log(list.join(" oAR "));
+   	console.log([fat, netCarb, prot].join(" yEs "));
 
- 	let foodListOptions = [];
- 	for (let food of list) {
- 	  let foodListQuery = await store.getFdcId(food);
- 	  console.log(foodListQuery);
- 	  foodListOptions.push(foodListQuery);
- 	}
+   	let foodListOptions = [];
+   	for (let food of list) {
+   	  let foodListQuery = await store.getFdcId(food);
+   	  // console.log(foodListQuery);
+   	  foodListOptions.push(foodListQuery);
+   	}
 
- 	if (foodListOptions.every(list => list.length === 0)) {
- 	  req.flash("error", "try your search again");
- 	  res.render("dashboard", {
- 	  	flash: req.flash(),
- 	  });
- 	}
+   	if (foodListOptions.every(list => list.length === 0)) {
+   	  req.flash("error", "try your search again");
+   	  res.render("dashboard", {
+   	  	flash: req.flash(),
+   	  });
+   	}
 
- 	res.render("select-food", {
- 	  foodListOptions,
- 	});
-
- 	next();
+   	res.render("select-food", {
+   	  foodListOptions,
+   	});
   })
 );
 
+// this function accepts a list of fdcIds which is checked against the app database
+// if the app contains it, move on. if the app does not contain it, query the food data
+// api and add it to the database
 const processFoods = async (store, fdcIds) => {
   for (let fdcId of fdcIds) {
- 	let foodFound = await store.findFood(fdcId);
- 	if (!foodFound) {
- 	  // query api for food data 
- 	  let result = await store.getFoodNutrients(fdcId);
- 	  // add food data to app database
- 	  if (!!result) {
- 	  	// let fdcId = result.fdcId;
- 	  	console.log(Object.keys(result));
- 	  	console.log(result.foodPortions);
- 	  	let name = result.description;
- 	  	let nutrients = result.foodNutrients;
- 	  	const macroValues = {};
- 	  	nutrients.forEach(foodNutrient => {
- 	  	  let macro = nutrientNumberMap[foodNutrient.nutrient.number];
- 	  	  macroValues[macro] = Number(foodNutrient.amount);
- 	  	});
- 	  	console.log(macroValues);
- 	  	let added = await store.addFood(fdcId, name, macroValues['Protein'], macroValues['Carbohydrate'], macroValues['Fiber'], macroValues['Fat']);
- 	   }
- 	  	// add entry to user_eats
- 	}
-	// let foodId = await store.getFoodId(fdcId);
-	// let addedToUserEats = await store.addFoodToUserEats(foodId, res.locals.username); 
+   	let foodFound = await store.findFood(fdcId);
+   	if (!foodFound) {
+   	  // query api for food data 
+   	  let result = await store.getFoodNutrients(fdcId);
+   	  // add food data to app database
+   	  if (!!result) {
+   	  	console.log(Object.keys(result));
+   	  	console.log(result.foodPortions);
+   	  	let name = result.description;
+   	  	let nutrients = result.foodNutrients;
+   	  	const macroValues = {};
+   	  	nutrients.forEach(foodNutrient => {
+   	  	  let macro = nutrientNumberMap[foodNutrient.nutrient.number];
+   	  	  macroValues[macro] = Number(foodNutrient.amount);
+   	  	});
+   	  	console.log(macroValues);
+   	  	let added = await store.addFood(fdcId, name, macroValues['Protein'], macroValues['Carbohydrate'], macroValues['Fiber'], macroValues['Fat']);
+   	   }
+   	}
   }
 }
 
@@ -197,18 +194,45 @@ app.post("/process-select-foods",
   catchError(async (req, res, next) => {
   	let store = res.locals.store;
   	let fdcIds = Object.values(req.body);
+    console.log(req.body);
+    let idsAndNames = [];
+    console.log("NEW NOW")
+    console.log("inside post process-select-foods AGAIN");
+    console.log(fdcIds);
 
   	await processFoods(store, fdcIds);
 
- 	for (let fdcId of fdcIds) {
-	  let foodId = await store.getFoodId(fdcId);
-	  let addedToUserEats = await store.addFoodToUserEats(foodId, res.locals.username); 
- 	}
+    for (let fdcId of fdcIds) {
+      let foodData = await store.getFood(fdcId);
+      let name = foodData.name;
+      idsAndNames.push([fdcId, name]);
+    }
 
- 	req.flash("succes", "new foods added to your history");
- 	res.redirect("/dashboard");
+    // now need a way of gathering serving size/portion sizes
+    res.render("select-portion", {
+      idsAndNames,
+    });
 
-  	next();
+    /// place below in post(/process-select-portion)
+
+   	// for (let fdcId of fdcIds) {
+  	 //  let foodId = await store.getFoodId(fdcId);
+  	 //  let addedToUserEats = await store.addFoodToUserEats(foodId, res.locals.username); 
+   	// }
+
+   	// req.flash("success", "new foods added to your history");
+   	// res.redirect("/dashboard");
+  })
+);
+
+app.post("/process-select-portion",
+  requiresAuthorization,
+  catchError(async (req, res, next) => {
+    let store = res.locals.store;
+    let info = req.body;
+    console.log(info);
+    next(); 
+    // COME BACK HERE 8/13/22 to fix portion by name/id
   })
 );
 
