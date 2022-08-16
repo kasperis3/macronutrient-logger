@@ -1,9 +1,13 @@
 extends layout
 
 block main
-  - let entries = Object.entries(userMacros)
-  each entry in entries
+  - let dates = Object.entries(userMacros)
+  each date in dates
     hr
-    p #{entry[0]} #{entry[1].toFixed(2)}
+    p #{date[0]} 
+    each entry in Object.entries(date[1])
+      - let macro = entry[0]
+      - let val = entry[1].toFixed(2)
+      p #{macro} #{val}
 
 

@@ -101,31 +101,31 @@ app.get("/history",
 app.get("/favorite-elements", 
   catchError(async (req, res, next) => {
   	const NUTS = ['Almonds', 'Hazelnuts', 'Walnuts', 'Pecans', 'Macadamia', 'Cashew'];
-	const SEEDS = ['Pumpkin Seeds', 'Sesame Seeds', 'Hemp Seeds', 'Chia Seeds', 'Sunflower Seeds'];
-	const FDC_IDS_NUTS = [1100508, 170182, 170178, 170162, 1100524, 170187];
-	const FDC_IDS_SEEDS = [170554, 170556, 1100608, 170562, 170148];
+  	const SEEDS = ['Pumpkin Seeds', 'Sesame Seeds', 'Hemp Seeds', 'Chia Seeds', 'Sunflower Seeds'];
+  	const FDC_IDS_NUTS = [1100508, 170182, 170178, 170162, 1100524, 170187];
+  	const FDC_IDS_SEEDS = [170554, 170556, 1100608, 170562, 170148];
 
-	let store = res.locals.store;
-	let fdcIds = [...FDC_IDS_SEEDS, ...FDC_IDS_NUTS];
+  	let store = res.locals.store;
+  	let fdcIds = [...FDC_IDS_SEEDS, ...FDC_IDS_NUTS];
 
-	await processFoods(store, fdcIds); // adds to app database
+  	await processFoods(store, fdcIds); // adds to app database
 
-	let awesomeFoods = {}; // dict of food.description + macro nutrients
+  	let awesomeFoods = {}; // dict of food.description + macro nutrients
 
-	for (let fdcId of fdcIds) {
-	  let foodData = await store.getFood(fdcId);
-	  awesomeFoods[foodData.name] = {
-	  	'Protein': foodData.protein,
-	  	'Carbohydrate': foodData.carbohydrate,
-	  	'Fat': foodData.fat,
-	  	'Fiber': foodData.fiber,
-	  	'Net Carb': foodData['net carb'],
-	  };
-	}
+  	for (let fdcId of fdcIds) {
+  	  let foodData = await store.getFood(fdcId);
+  	  awesomeFoods[foodData.name] = {
+  	  	'Protein': foodData.protein,
+  	  	'Carbohydrate': foodData.carbohydrate,
+  	  	'Fat': foodData.fat,
+  	  	'Fiber': foodData.fiber,
+  	  	'Net Carb': foodData['net carb'],
+  	  };
+  	}
 
-	res.render("favorite-elements", {
-	  awesomeFoods,
-	});
+  	res.render("favorite-elements", {
+  	  awesomeFoods,
+  	});
   })
 );
 
@@ -212,16 +212,6 @@ app.post("/process-select-foods",
     res.render("select-portion", {
       idsAndNames,
     });
-
-    /// place below in post(/process-select-portion)
-
-   	// for (let fdcId of fdcIds) {
-  	 //  let foodId = await store.getFoodId(fdcId);
-  	 //  let addedToUserEats = await store.addFoodToUserEats(foodId, res.locals.username); 
-   	// }
-
-   	// req.flash("success", "new foods added to your history");
-   	// res.redirect("/dashboard");
   })
 );
 
@@ -229,10 +219,25 @@ app.post("/process-select-portion",
   requiresAuthorization,
   catchError(async (req, res, next) => {
     let store = res.locals.store;
-    let info = req.body;
+    let info = Object.entries(req.body);
+    // let keys = FDC_IDs and values = portion_size
+    let fdcIds = Object.keys(info);
+    let portionSizes = Object.values(info);
+    console.log("inside post process-select-portion");
     console.log(info);
-    next(); 
-    // COME BACK HERE 8/13/22 to fix portion by name/id
+
+    for (let item of info) {
+      let [fdcId, portionSize] = item;
+      console.log(item);
+      console.log(fdcId);
+      console.log(portionSize);
+      portionSize = (portionSize / 100.0).toFixed(2);
+      let foodId = await store.getFoodId(fdcId);
+      let addedToUserEats = await store.addFoodToUserEats(foodId, res.locals.username, portionSize)
+    }
+
+    req.flash("success", "new foods added to your history");
+    res.redirect("/dashboard");
   })
 );
 

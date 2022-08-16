@@ -7,11 +7,11 @@ block main
       - let fdcId = idAndName[0]
       - let name = idAndName[1]
       p #{fdcId} #{name}
-      label(for="portionSize") Enter portion size
+      label(for=`${fdcId}`) Enter portion size
       input(type="text"
-            name="portionSize"
+            name=`${fdcId}`
             placeholder="eg 30g")
-    hr
+      hr
 
     fieldset
       input(type="submit" value="Submit choices")

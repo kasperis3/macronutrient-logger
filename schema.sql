@@ -21,6 +21,7 @@ CREATE TABLE food_stuffs (
 CREATE TABLE user_eats (
   food_id int NOT NULL REFERENCES food_stuffs(id) ON DELETE CASCADE,
   username text NOT NULL,
+  portion_size numeric NOT NULL,
   "date" date DEFAULT CURRENT_DATE
 );
 
