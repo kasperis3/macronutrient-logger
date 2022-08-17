@@ -231,6 +231,7 @@ app.post("/process-select-portion",
       console.log(item);
       console.log(fdcId);
       console.log(portionSize);
+
       portionSize = (portionSize / 100.0).toFixed(2);
       let foodId = await store.getFoodId(fdcId);
       let addedToUserEats = await store.addFoodToUserEats(foodId, res.locals.username, portionSize)
