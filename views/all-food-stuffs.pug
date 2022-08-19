@@ -1,0 +1,13 @@
+extends layout
+
+block main
+  - let values = Object.values(userEntries)
+
+  each foodItem in values
+    hr 
+    p #{foodItem.name}
+    li protein: #{foodItem.protein}
+    li fat: #{foodItem.fat}
+    li carbohydrate: #{foodItem.carbohydrate}
+    li fiber: #{foodItem.fiber}
+    li net carb: #{foodItem['net carb']}

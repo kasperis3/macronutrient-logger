@@ -20,7 +20,6 @@ const PORT = config.PORT;
 const HOST = config.HOST;
 const LokiStore = store(session);
 
-
 app.set("views", "./views");
 app.set("view engine", "pug");
 
@@ -47,9 +46,6 @@ app.use(flash());
 
 app.use((req, res, next) => {
   res.locals.store = new PgPersistence(req.session);
-  // res.locals.store.testQuery1();
-  // res.locals.store.testQuery2();
-  // res.locals.store.testQuery3();
   next();
 });
 
@@ -134,13 +130,8 @@ app.post("/process-request",
   catchError(async (req, res, next) => {
   	let store = res.locals.store;
   	let list = req.body.list.split(","); // req.body.list of food items eaten today
-
-   	let fat = req.body.fat;
-   	let netCarb = req.body.carb;
-   	let prot = req.body.prot;
    	
    	console.log(list.join(" oAR "));
-   	console.log([fat, netCarb, prot].join(" yEs "));
 
    	let foodListOptions = [];
    	for (let food of list) {
@@ -173,8 +164,6 @@ const processFoods = async (store, fdcIds) => {
    	  let result = await store.getFoodNutrients(fdcId);
    	  // add food data to app database
    	  if (!!result) {
-   	  	console.log(Object.keys(result));
-   	  	console.log(result.foodPortions);
    	  	let name = result.description;
    	  	let nutrients = result.foodNutrients;
    	  	const macroValues = {};
@@ -182,8 +171,7 @@ const processFoods = async (store, fdcIds) => {
    	  	  let macro = nutrientNumberMap[foodNutrient.nutrient.number];
    	  	  macroValues[macro] = Number(foodNutrient.amount);
    	  	});
-   	  	console.log(macroValues);
-   	  	let added = await store.addFood(fdcId, name, macroValues['Protein'], macroValues['Carbohydrate'], macroValues['Fiber'], macroValues['Fat']);
+   	  	await store.addFood(fdcId, name, macroValues['Protein'], macroValues['Carbohydrate'], macroValues['Fiber'], macroValues['Fat']);
    	   }
    	}
   }
@@ -194,11 +182,7 @@ app.post("/process-select-foods",
   catchError(async (req, res, next) => {
   	let store = res.locals.store;
   	let fdcIds = Object.values(req.body);
-    console.log(req.body);
     let idsAndNames = [];
-    console.log("NEW NOW")
-    console.log("inside post process-select-foods AGAIN");
-    console.log(fdcIds);
 
   	await processFoods(store, fdcIds);
 
@@ -208,7 +192,6 @@ app.post("/process-select-foods",
       idsAndNames.push([fdcId, name]);
     }
 
-    // now need a way of gathering serving size/portion sizes
     res.render("select-portion", {
       idsAndNames,
     });
@@ -220,18 +203,12 @@ app.post("/process-select-portion",
   catchError(async (req, res, next) => {
     let store = res.locals.store;
     let info = Object.entries(req.body);
-    // let keys = FDC_IDs and values = portion_size
     let fdcIds = Object.keys(info);
     let portionSizes = Object.values(info);
-    console.log("inside post process-select-portion");
-    console.log(info);
 
     for (let item of info) {
       let [fdcId, portionSize] = item;
-      console.log(item);
-      console.log(fdcId);
-      console.log(portionSize);
-
+      // TODO: input validation here (eliminate g/grams/etc)
       portionSize = (portionSize / 100.0).toFixed(2);
       let foodId = await store.getFoodId(fdcId);
       let addedToUserEats = await store.addFoodToUserEats(foodId, res.locals.username, portionSize)
@@ -244,7 +221,13 @@ app.post("/process-select-portion",
 
 app.get("/food-stuffs", 
   catchError(async (req, res, next) => {
-  	next(); // display what users have entered into the database so far
+  	// display what users have entered into the food-stuffs database so far
+    let store = res.locals.store;
+    let userEntries = await store.getAllUserEntries();
+    console.log(userEntries);
+    res.render("all-food-stuffs", {
+      userEntries,
+    });
   })
 );
 
