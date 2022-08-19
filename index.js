@@ -189,7 +189,7 @@ app.post("/process-select-foods",
     for (let fdcId of fdcIds) {
       let foodData = await store.getFood(fdcId);
       let name = foodData.name;
-      idsAndNames.push([fdcId, name]);
+      idsAndNames.push([fdcId, name, foodData]);
     }
 
     res.render("select-portion", {

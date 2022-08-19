@@ -6,11 +6,18 @@ block main
     each idAndName in idsAndNames
       - let fdcId = idAndName[0]
       - let name = idAndName[1]
+      - let foodItem = idAndName[2]
       p #{fdcId} #{name}
       label(for=`${fdcId}`) Enter portion size
       input(type="text"
             name=`${fdcId}`
             placeholder="eg 30g")
+      p Nutrition Facts
+      li protein: #{foodItem.protein}g
+      li fat: #{foodItem.fat}g
+      li carbohydrate: #{foodItem.carbohydrate}g
+      li fiber: #{foodItem.fiber}g
+      li net carb: #{foodItem['net carb']}g
       hr
 
     fieldset
