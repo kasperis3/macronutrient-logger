@@ -15,6 +15,8 @@ const nutrientNumberMap = {
   '291': 'Fiber'
 };
 
+const { renderFavoriteElements, getFoodStuffs, userSignIn, userCreate } = require('./lib/routes');
+
 const app = express();
 const PORT = config.PORT;
 const HOST = config.HOST;
@@ -95,34 +97,7 @@ app.get("/history",
 );
 
 app.get("/favorite-elements", 
-  catchError(async (req, res, next) => {
-  	const NUTS = ['Almonds', 'Hazelnuts', 'Walnuts', 'Pecans', 'Macadamia', 'Cashew'];
-  	const SEEDS = ['Pumpkin Seeds', 'Sesame Seeds', 'Hemp Seeds', 'Chia Seeds', 'Sunflower Seeds'];
-  	const FDC_IDS_NUTS = [1100508, 170182, 170178, 170162, 1100524, 170187];
-  	const FDC_IDS_SEEDS = [170554, 170556, 1100608, 170562, 170148];
-
-  	let store = res.locals.store;
-  	let fdcIds = [...FDC_IDS_SEEDS, ...FDC_IDS_NUTS];
-
-  	await processFoods(store, fdcIds); // adds to app database
-
-  	let awesomeFoods = {}; // dict of food.description + macro nutrients
-
-  	for (let fdcId of fdcIds) {
-  	  let foodData = await store.getFood(fdcId);
-  	  awesomeFoods[foodData.name] = {
-  	  	'Protein': foodData.protein,
-  	  	'Carbohydrate': foodData.carbohydrate,
-  	  	'Fat': foodData.fat,
-  	  	'Fiber': foodData.fiber,
-  	  	'Net Carb': foodData['net carb'],
-  	  };
-  	}
-
-  	res.render("favorite-elements", {
-  	  awesomeFoods,
-  	});
-  })
+  renderFavoriteElements,
 );
 
 app.post("/process-request", 
@@ -220,55 +195,15 @@ app.post("/process-select-portion",
 );
 
 app.get("/food-stuffs", 
-  catchError(async (req, res, next) => {
-  	// display what users have entered into the food-stuffs database so far
-    let store = res.locals.store;
-    let userEntries = await store.getAllUserEntries();
-    console.log(userEntries);
-    res.render("all-food-stuffs", {
-      userEntries,
-    });
-  })
+  getFoodStuffs,
 );
 
 app.post("/users/signin",
-  catchError(async (req, res) => {
-  	let store = res.locals.store;
-  	let username = req.body.username.trim();
-  	let password = req.body.password;
-
-  	if (await store.acceptsLoginCredentials(username, password)) {
-  	  req.flash("info", "Welcome");
-      req.session.signedIn = true;
-      req.session.username = username;
-  	  res.redirect("/dashboard");
-  	} else {
-  	  req.flash("error", "invalid log in credentials");
-  	  res.render("welcome", {
-  	  	flash: req.flash(),
-  	  	username, 
-  	  })
-  	}
-  })
+  userSignIn,
 );
 
 app.post("/users/create",
-  catchError(async (req, res, next) => {
-  	let store = res.locals.store;
-  	let username = req.body.username.trim();
-  	let password = req.body.password;
-
-  	if (await store.addNewUser(username, password)) {
-  	  req.flash("success", "New user added");
-  	  res.redirect("/users/signin");
-  	} else {
-  	  req.flash("error", "username already exists");
-  	  res.render("create", {
-  	  	flash: req.flash(),
-  	  })
-  	}
-
-  })
+  userCreate, 
 );
 
 app.post("/users/signout", (req, res, next) => {
